@@ -12,8 +12,6 @@ long duration;
 #define CE 7
 #define CS 8
 
-#define redLights 4
-
 #define trig 5
 #define echo 6
 
@@ -29,17 +27,15 @@ byte addresses[][6] = {"Node1", "Node2"};
 
 void setup()
 {
-  Serial.begin(9600);
   radio.begin();
   AFMS.begin();
 
   pinMode(trig, OUTPUT);
   pinMode(echo, INPUT);
   pinMode(honk, OUTPUT);
-  pinMode(redLights, OUTPUT);
 
   radio.setPALevel(RF24_PA_LOW);
-  radio.setPayloadSize(2);
+  radio.setPayloadSize(2); //We are always sending and receiving ints (2 bytes). Increase efficiency
 
   radio.openWritingPipe(addresses[0]);
   radio.openReadingPipe(1, addresses[1]);
@@ -50,26 +46,24 @@ void setup()
 void loop()
 {
   stopped = 0;
-  if(readUltraSonic() < 10)
+  if(readUltraSonic() < 10) //Is there an obstacle present?
   {
     stopped = 1;
   }
 
   radio.stopListening();
-  radio.write(&stopped, sizeof(stopped));
+  radio.write(&stopped, sizeof(stopped)); //Communicate precense or non precense of obstacle
 
   radio.startListening();
 
   if(radio.available())
   {
-       Serial.println("Hello");
-
     while(radio.available())
     {
       radio.read(&received, sizeof(received));
     }
 
-    decodeMessage();
+    decodeMessage(); //Only when there is message
   }
 
   
@@ -88,7 +82,7 @@ int readUltraSonic()
   duration = pulseIn(echo, HIGH);
 
   int distance = duration*.034/2;
-  return distance;
+  return distance; //in cm
 }
 
 void decodeMessage()
@@ -140,7 +134,7 @@ void decodeMessage()
     }
   }
 
-  doSomething(x, y, toHonk);
+  doSomething(x, y, toHonk); //Use decoded values to move car
 }
 
 void doSomething(int x, int y, bool honking)
@@ -154,7 +148,7 @@ void doSomething(int x, int y, bool honking)
     digitalWrite(honk, HIGH);
   }
 
-  if(abs(x) > 0 && stopped == 0)
+  if(abs(x) > 0 && stopped == 0) //Message with left right order AND no obstacle present
   {
     if(x < 0) //Left
     {
@@ -172,7 +166,7 @@ void doSomething(int x, int y, bool honking)
     left->run(FORWARD);
     right->run(FORWARD);
   }
-  else if(abs(y) > 15 && stopped == 0)
+  else if(abs(y) > 15 && stopped == 0) //Message with forward backward order and no obstacle present
   {
     if(y < 0) //Backward
     {
@@ -183,10 +177,6 @@ void doSomething(int x, int y, bool honking)
       right->setSpeed(rightPwr);
       left->run(BACKWARD);
       right->run(BACKWARD);
-
-      digitalWrite(redLights, HIGH);
-
-      Serial.println("Backwards");
     }
     else //Forward
     {
@@ -208,8 +198,6 @@ void doSomething(int x, int y, bool honking)
   }
 
   delay(100);
-
   digitalWrite(honk, LOW);
-  digitalWrite(redLights, LOW);
 }
 
