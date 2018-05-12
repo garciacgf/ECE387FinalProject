@@ -38,7 +38,7 @@ void setup()
   radio.openWritingPipe(addresses[1]);
   radio.openReadingPipe(1, addresses[0]);
 
-  radio.maskIRQ(1,1,0);
+  radio.maskIRQ(1,1,0); //Turn on interrupt only when there is a package received
   attachInterrupt(2, interruptFunction, FALLING); //Pin #0 (RX) used to detect interrupt
   
   //Let's set up the MPU to wake up
@@ -94,11 +94,11 @@ void interruptFunction()
   {
     radio.read(&stopped, sizeof(stopped));
   }
-    if(stopped == 1)
+  if(stopped == 1) //If obstacle is encountered, turn on onboard light.
   {
      strip.setPixelColor(0, 255, 90, 80);
      strip.show();
-     delay(900);
+     delay(1000);
      strip.setPixelColor(0, 0, 0 ,0);
      strip.show();
   }
